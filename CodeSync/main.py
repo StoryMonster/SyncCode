@@ -19,7 +19,7 @@ if __name__ == "__main__":
     configs_for_procedures = get_configurations_from_config_file(args.config_file)
     for procedure_name in configs_for_procedures:
         config = configs_for_procedures[procedure_name]
-        procudure = SyncCodeProcedure(procedure_name, config, None)
+        procudure = SyncCodeProcedure(procedure_name, config)
         procudure.start()
         procudure.stop()
 
