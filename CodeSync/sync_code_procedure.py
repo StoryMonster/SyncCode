@@ -3,7 +3,8 @@ import os
 import subprocess
 import collections
 import re
-
+from utils import convert_to_unix_eol
+import platform
 
 """
 ChangedFile: The modified file under workspace
@@ -64,6 +65,8 @@ class SyncCodeProcedure(object):
         print("reset target to HEAD")
         for changed_file_with_relativ_path, action in self.changed_files:
             if action in ["A", "M"]:
+                if platform.uname().system == "Windows":
+                    convert_to_unix_eol(os.path.join(self.source_workdir, changed_file_with_relativ_path))
                 self._post_file_to_target(changed_file_with_relativ_path)
             else:
                 self._remove_file_on_target(changed_file_with_relativ_path)
