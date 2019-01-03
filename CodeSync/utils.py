@@ -8,3 +8,4 @@ def convert_to_unix_eol(file_name):
         fd.seek(0, 0)
         fd.truncate(0)
         fd.writelines("\n".join(lines))
+        fd.write("\n")
