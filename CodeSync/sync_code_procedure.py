@@ -24,7 +24,8 @@ class SyncCodeProcedure(object):
         self.username = context["username"]
         self.hostname = context["hostname"]
         self.password = context["password"]
-        self.sshlink = SSHLink(self.hostname, self.username, self.password)
+        self.ingore_list = context["ignore"]
+        self.sshlink = SSHLink(self.hostname, self.username, self.password, workspace=self.target_workdir)
         self.changed_files = []
 
 
@@ -42,7 +43,7 @@ class SyncCodeProcedure(object):
         self._get_all_changed_files()
         self._apply_changes_to_target()
 
-    
+
     def _get_all_changed_files(self):
         cwd = os.getcwd()
         os.chdir(self.source_workdir)
@@ -52,14 +53,17 @@ class SyncCodeProcedure(object):
         for line in output:
             matched = regex.match(line)
             if not matched: continue
+            relative_path = matched.group(2)
+            if relative_path in self.ingore_list: continue
             if matched.group(1) in ("A", "D", "M"):
-                self.changed_files.append(ChangedFile(matched.group(2), matched.group(1)))
+                self.changed_files.append(ChangedFile(relative_path, matched.group(1)))
             elif matched.group(1) == "??":
-                relative_path = matched.group(2)
-                if self._is_user_code_file(relative_path):
+                if os.path.isdir(os.path.join(self.source_workdir, relative_path)):
+                    self._add_folder_as_changed(relative_path)
+                elif self._is_user_code_file(relative_path):
                     self.changed_files.append(ChangedFile(relative_path, "A"))
 
-    
+
     def _apply_changes_to_target(self):
         self.sshlink.execute(f"pushd {self.target_workdir} && git reset --hard HEAD && popd")
         print("reset target to HEAD")
@@ -70,6 +74,19 @@ class SyncCodeProcedure(object):
                 self._post_file_to_target(changed_file_with_relativ_path)
             else:
                 self._remove_file_on_target(changed_file_with_relativ_path)
+
+
+    def _add_folder_as_changed(self, path):
+        print(f"create folder {path} on {self.hostname}")
+        self.sshlink.mkdir_on_target(path)
+        files = os.listdir(os.path.join(self.source_workdir, path))
+        for file_name in files:
+            if file_name in [".", ".."]: continue
+            relative_path = f"{path}/{file_name}"
+            if os.path.isdir(relative_path):
+                self._add_folder_as_changed(relative_path)
+            elif self._is_user_code_file(relative_path):
+                self.changed_files.append(ChangedFile(relative_path, "A"))
 
 
     def _post_file_to_target(self, file_with_relative_path):
@@ -88,7 +105,7 @@ class SyncCodeProcedure(object):
 
 
     def _context_precheck(self):
-        neccessary_fields = ["username", "password", "hostname", "source_workdir", "target_workdir"]
+        neccessary_fields = ["username", "password", "hostname", "source_workdir", "target_workdir", "ignore"]
         for field in neccessary_fields:
             if field not in self.context:
                 print(f"{field} not found in configuration of {self.name}")

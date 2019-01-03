@@ -1,5 +1,5 @@
 $ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
-python $ScriptDir\CodeSync\main.py --config-file=$ScriptDir\config.ini
+python $ScriptDir\CodeSync\main.py --config-file=$ScriptDir\config.ini $args
 
 if ($?)
 {
