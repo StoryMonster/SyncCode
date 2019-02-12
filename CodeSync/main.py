@@ -1,4 +1,5 @@
-from sync_code_procedure import SyncCodeProcedure
+from sync_git_code_procedure import SyncGitCodeProcedure
+from sync_non_git_code_procedure import SyncNonGitCodeProcedure
 import json
 import argparse
 import os
@@ -10,9 +11,15 @@ def get_configurations_from_config_file(config_file):
 
 
 def run_procedure(procedure_name, procedure_config):
-    procudure = SyncCodeProcedure(procedure_name, procedure_config)
-    procudure.start()
-    procudure.stop()
+    procedure = None
+    if procedure_config["use_git"]:
+        print("sync git folder")
+        procedure = SyncGitCodeProcedure(procedure_name, procedure_config)
+    else:
+        print("sync non-git folder")
+        procedure = SyncNonGitCodeProcedure(procedure_name, procedure_config)
+    procedure.start()
+    procedure.stop()
 
 
 def parse_args():
@@ -22,25 +29,10 @@ def parse_args():
     return parser.parse_args()
 
 
-def is_root_dir(path):
-    return ".git" in os.listdir(path)
-
-
-def get_repository_root_path():
-    import os, platform
-    cwd = os.getcwd()
-    spliter = "\\" if platform.system() == "Windows" else "/"
-    nodes = cwd.split(spliter)
-    while len(nodes) != 0:
-        path = spliter.join(nodes)
-        if is_root_dir(path): return path
-        del nodes[-1]
-    return ""
-
-
 def get_procedure_name_for_sync_current_repository(configs):
     for proc_name in configs:
-        if os.path.samefile(configs[proc_name]["source_workdir"], get_repository_root_path()):
+        cwd = os.getcwd()
+        if cwd.find(configs[proc_name]["source_workdir"]) != -1:
             return proc_name
     return None
 

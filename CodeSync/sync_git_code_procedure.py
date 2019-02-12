@@ -1,9 +1,8 @@
 from sshlink import SSHLink
 import os
-import subprocess
 import collections
 import re
-from utils import convert_to_unix_eol
+from utils import convert_to_unix_eol, procedure_context_precheck
 import platform
 
 """
@@ -14,11 +13,11 @@ ChangedFile: The modified file under workspace
 ChangedFile = collections.namedtuple("ChangedFile", ["relative_path", "action"])
 
 
-class SyncCodeProcedure(object):
+class SyncGitCodeProcedure(object):
     def __init__(self, name, context):
-        self.context = context
-        assert self._context_precheck()
+        assert procedure_context_precheck(name, context)
         self.name = name
+        self.context = context
         self.source_workdir = context["source_workdir"]
         self.target_workdir = context["target_workdir"]
         self.username = context["username"]
@@ -103,11 +102,3 @@ class SyncCodeProcedure(object):
     def _is_user_code_file(self, file_name):
         return re.match(r".*(\.cpp|\.hpp|\.py|\.mt|\.ttcn3)$", file_name)
 
-
-    def _context_precheck(self):
-        neccessary_fields = ["username", "password", "hostname", "source_workdir", "target_workdir", "ignore"]
-        for field in neccessary_fields:
-            if field not in self.context:
-                print(f"{field} not found in configuration of {self.name}")
-                return False
-        return True
