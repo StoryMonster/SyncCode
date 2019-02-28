@@ -1,11 +1,15 @@
 import paramiko
+import re
 
 
 class SSHLink(object):
     def __init__(self, hostname, username, password, workspace=None, platform="linux"):
         self.client = paramiko.SSHClient()
-        self.client.load_system_host_keys()
-        self.client.connect(hostname, username=username, password=password)
+        if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", hostname) is not None:
+            self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        else:
+            self.client.load_system_host_keys()
+        self.client.connect(hostname=hostname, username=username, password=password)
         self.sftp = self.client.open_sftp()
         self.platform = platform
         if workspace is not None:
