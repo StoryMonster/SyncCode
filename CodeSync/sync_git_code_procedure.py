@@ -100,5 +100,5 @@ class SyncGitCodeProcedure(object):
 
 
     def _is_user_code_file(self, file_name):
-        return re.match(r".*(\.cpp|\.hpp|\.py|\.mt|\.ttcn3)$", file_name)
+        return re.match(r".*(\.cpp|\.hpp|\.py|\.mt|\.ttcn3|CMakeLists\.txt|\.proto)$", file_name)
 
